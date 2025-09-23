@@ -11,3 +11,45 @@ CORS_CONFIG = {
 app = FastAPI()
 app.add_middleware(CORSMiddleware, **CORS_CONFIG)
 
+@app.post("/login")
+def log_in():
+    #check credentials, return auth_token
+    return_info() #with auth token
+    #send info and authtoken to client
+    pass
+
+@app.get("/logout")
+def log_out():
+    #delete authtoken
+    pass
+
+def return_info():
+    # get the users info from the database
+    pass
+
+def check_auth():
+    pass
+
+@app.post("/start_workout")
+def start_workout():
+    check_auth()
+    #change state saved in db
+    pass
+
+@app.post("/set_complete")
+def set_complete():
+    check_auth()
+    #update database based on heuristics
+    #change state saved in db
+    #return info?
+    pass
+
+@app.post("/update_workout")
+def update_workout():
+    check_auth()
+    pass
+
+@app.post("/signup")
+def sign_up():
+    #create new user in database
+    pass
