@@ -29,7 +29,7 @@ def log_in(user_id: Annotated[str, Body()], password: Annotated[str, Body()]):
     """
     Takes in a user id and password, returns a new authtoken for the session.
     """
-    auth_token = db.log_in(user_id, password)
+    auth_token = db.log_in_user(user_id, password)
 
     if not auth_token:
         return { "message" : "failure" , "authtoken" : "" }
@@ -41,7 +41,7 @@ def log_out(auth_token: Annotated[str, Body()]):
     """
     Takes in a authtoken, deletes the authtoken from the database.
     """
-    db.log_out(auth_token)
+    db.log_out_user(auth_token)
 
     return { "message" : "success" }
 
@@ -54,6 +54,9 @@ def sign_up(user_id: Annotated[str, Body()], password: Annotated[str, Body()], a
         return { "message" : "failure" , "authtoken" : "" }
 
     auth_token = db.create_user(user_id, password)
+
+    if not auth_token:
+        return { "message" : "failure" , "authtoken" : "" }
 
     return { "message" : "success" , "authtoken" : auth_token }
 
