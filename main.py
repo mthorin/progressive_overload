@@ -96,7 +96,7 @@ def set_complete(auth_token: Annotated[str, Body()], diff: Annotated[int, Body()
     
     workout = db.get_current_workout(user_id)
     # update database based on heuristics
-    db.update_workout_by_id(workout.id, workout)
+    db.update_workout_by_id(workout.name, workout)
 
     db.complete_set(user_id)
 

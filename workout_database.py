@@ -2,6 +2,8 @@ import dataclasses
 import secrets
 import time
 
+STATE_OFFSET = 2
+
 @dataclasses.dataclass
 class Workout:
     sets: list[tuple[int, int]]
@@ -26,11 +28,6 @@ class User:
     bulk: bool
     curr_day: int
     plan: Plan
-
-# -- States --
-# 0 - Haven't started a workout
-# 1 - Workout started, in between selection
-# 2... - Current workout
 
 class WorkoutDatabase:
     def __init__(self):
@@ -77,18 +74,40 @@ class WorkoutDatabase:
         self.auth[auth_token] = (auth_data[0], time.time())
 
         return True
+    
+            # -- States --
+            # 0    - 'inactive' Haven't started a workout 
+            # 1    - 'active'   Workout started, in between selection
+            # 2... - 'mid_set'  Current workout id + STATE_OFFSET
 
     def get_state(self, user_id: str):
-        pass
+        state = self.user_data[user_id].state
+        if state > 1:
+            return 'mid_set'
+        if state == 1:
+            return 'active'
+        return 'inactive'
+    
+    def initiate_workout(self, user_id: str):
+        self.user_data[user_id].state = 1
+
+        ls_workouts = self.user_data[user_id].plan.days[self.user_data[user_id].curr_day]
+
+        self.user_data[user_id].completed = [False] * len(ls_workouts)
 
     def get_current_workout(self, user_id: str):
-        pass
+        data = self.user_data[user_id]
+        state = data.state
+        plan = data.plan
+        day = data.curr_day
 
-    def initiate_workout(self, user_id: str):
-        pass
+        ls_workouts = plan.days[day]
+        return ls_workouts.workouts[state - STATE_OFFSET]
 
     def update_workout_by_id(self, workout_id: str, new_workout: Workout):
         pass
 
     def complete_set(self, user_id: str):
-        pass
+        state = self.user_data[user_id].state
+        self.user_data[user_id].completed[state - STATE_OFFSET] = True
+        self.user_data[user_id].state = 1
