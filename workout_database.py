@@ -6,7 +6,7 @@ STATE_OFFSET = 2
 
 @dataclasses.dataclass
 class Workout:
-    sets: list[tuple[int, int]]
+    sets: list[tuple[float, float]]
     name: str
     increment: int
     max_reps: int
@@ -75,10 +75,12 @@ class WorkoutDatabase:
 
         return True
     
-            # -- States --
-            # 0    - 'inactive' Haven't started a workout 
-            # 1    - 'active'   Workout started, in between selection
-            # 2... - 'mid_set'  Current workout id + STATE_OFFSET
+    """
+            -- States --
+        0    - 'inactive' Haven't started a workout 
+        1    - 'active'   Workout started, in between selection
+        2... - 'mid_set'  Current workout id + STATE_OFFSET
+    """
 
     def get_state(self, user_id: str):
         state = self.user_data[user_id].state
@@ -87,6 +89,9 @@ class WorkoutDatabase:
         if state == 1:
             return 'active'
         return 'inactive'
+    
+    def check_bulk_status(self, user_id: str):
+        return self.user_data[user_id].bulk
     
     def initiate_workout(self, user_id: str):
         self.user_data[user_id].state = 1
@@ -104,7 +109,8 @@ class WorkoutDatabase:
         ls_workouts = plan.days[day]
         return ls_workouts.workouts[state - STATE_OFFSET]
 
-    def update_workout_by_id(self, workout_id: str, new_workout: Workout):
+    # TODO
+    def update_workout_by_id(self, user_id: str, workout_id: str, new_workout: Workout):
         pass
 
     def complete_set(self, user_id: str):
