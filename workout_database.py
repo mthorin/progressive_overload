@@ -6,6 +6,7 @@ STATE_OFFSET = 2
 
 @dataclasses.dataclass
 class Workout:
+    id: int
     sets: list[tuple[float, float]]
     name: str
     increment: int
@@ -14,11 +15,8 @@ class Workout:
     
 @dataclasses.dataclass
 class Day:
-    workouts: list[Workout]
-
-@dataclasses.dataclass
-class Plan:
-    days: list[Day]
+    name: str
+    workouts: list[int]
 
 @dataclasses.dataclass
 class User:
@@ -27,7 +25,9 @@ class User:
     completed: list[bool]
     bulk: bool
     curr_day: int
-    plan: Plan
+    plan: list[Day]
+    workouts: dict[Workout]
+    next_workout_id: int
 
 class WorkoutDatabase:
     def __init__(self):
@@ -57,7 +57,15 @@ class WorkoutDatabase:
         if self.user_data.get(user_id):
             return None
         
-        self.user_data[user_id] = User(password, 0, [], True, 0, Plan([]))
+        self.user_data[user_id] = User(
+            password, 
+            0, 
+            [], 
+            True, 
+            0, 
+            [], 
+            dict(), 
+            0)
 
         return self.generate_auth(user_id)
 
@@ -96,22 +104,20 @@ class WorkoutDatabase:
     def initiate_workout(self, user_id: str):
         self.user_data[user_id].state = 1
 
-        ls_workouts = self.user_data[user_id].plan.days[self.user_data[user_id].curr_day]
+        day = self.user_data[user_id].plan[self.user_data[user_id].curr_day]
 
-        self.user_data[user_id].completed = [False] * len(ls_workouts)
+        self.user_data[user_id].completed = [False] * len(day.workouts)
 
     def get_current_workout(self, user_id: str):
         data = self.user_data[user_id]
         state = data.state
-        plan = data.plan
-        day = data.curr_day
+        day = data.plan[data.curr_day]
 
-        ls_workouts = plan.days[day]
-        return ls_workouts.workouts[state - STATE_OFFSET]
+        workout_id = day.workouts[state - STATE_OFFSET]
+        return data.workouts[workout_id]
 
-    # TODO
-    def update_workout_by_id(self, user_id: str, workout_id: str, new_workout: Workout):
-        pass
+    def update_workout_by_id(self, user_id: str, workout_id: int, new_workout: Workout):
+        self.user_data[user_id].workouts[workout_id] = new_workout
 
     def complete_set(self, user_id: str):
         state = self.user_data[user_id].state

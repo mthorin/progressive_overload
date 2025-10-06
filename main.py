@@ -13,6 +13,7 @@ CORS_CONFIG = {
 }
 
 class Workout(BaseModel):
+    id: int
     sets: list[tuple[float, float]]
     name: str
     increment: int
@@ -182,12 +183,8 @@ def update_workout(auth_token: Annotated[str, Body()], workout: Workout):
     if not user_id:
         return { "message" : "failure" }
     
-    # fill
+    # TODO: fill
     return { "message" : "success" }
-
-def return_info():
-    # get the users info from the database
-    pass
 
 @app.get("/load")
 def load_state(auth_token: Annotated[str, Body()]):
