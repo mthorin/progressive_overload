@@ -189,7 +189,7 @@ def update_workout(auth_token: Annotated[str, Body()], workout: Workout):
 @app.get("/load")
 def load_state(auth_token: Annotated[str, Body()]):
     # get the current state (return_info)
-    return_info()
+ 
     # if appropriate, get the current workout
     # return
     pass
