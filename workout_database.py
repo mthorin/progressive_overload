@@ -65,7 +65,7 @@ class WorkoutDatabase:
             0, 
             [], 
             dict(), 
-            0)
+            1)
 
         return self.generate_auth(user_id)
 
@@ -118,6 +118,17 @@ class WorkoutDatabase:
 
     def update_workout_by_id(self, user_id: str, workout_id: int, new_workout: Workout):
         self.user_data[user_id].workouts[workout_id] = new_workout
+
+    def get_workout_by_id(self, user_id: str, workout_id: int):
+        return self.user_data[user_id].workouts[workout_id]
+    
+    def add_workout(self, user_id: str, new_workout: Workout):
+        new_workout.id = self.user_data[user_id].next_workout_id
+        self.user_data[user_id].next_workout_id += 1
+        self.user_data[user_id].workouts[new_workout.id] = new_workout
+
+    def delete_workout(self, user_id: str, workout_id: int):
+        self.user_data[user_id].workouts.pop(workout_id)
 
     def complete_set(self, user_id: str):
         state = self.user_data[user_id].state

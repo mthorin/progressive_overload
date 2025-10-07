@@ -23,6 +23,12 @@ class Workout(BaseModel):
 app = FastAPI()
 app.add_middleware(CORSMiddleware, **CORS_CONFIG)
 
+# Message defaults
+AUTH_FAIL = "invalid auth"
+SUCCESS = "success"
+BAD_STATE = "incorrect state"
+NOT_FOUND = "item not found"
+
 db = WorkoutDatabase()
 
 @app.put("/login")
@@ -33,9 +39,9 @@ def log_in(user_id: Annotated[str, Body()], password: Annotated[str, Body()]):
     auth_token = db.log_in_user(user_id, password)
 
     if not auth_token:
-        return { "message" : "failure" , "authtoken" : "" }
+        return { "message" : AUTH_FAIL , "authtoken" : "" }
     
-    return { "message" : "success" , "authtoken" : auth_token }
+    return { "message" : SUCCESS , "authtoken" : auth_token }
 
 @app.delete("/logout")
 def log_out(auth_token: Annotated[str, Body()]):
@@ -44,7 +50,7 @@ def log_out(auth_token: Annotated[str, Body()]):
     """
     db.log_out_user(auth_token)
 
-    return { "message" : "success" }
+    return { "message" : SUCCESS }
 
 @app.post("/signup")
 def sign_up(user_id: Annotated[str, Body()], password: Annotated[str, Body()], access_key: Annotated[str, Body()]):
@@ -52,14 +58,14 @@ def sign_up(user_id: Annotated[str, Body()], password: Annotated[str, Body()], a
     Takes in a user id, password, and access key and returns a new authtoken for the session and creates an entry for the user in the database.
     """
     if access_key is not 'l1h4f7d9_progressive':
-        return { "message" : "failure" , "authtoken" : "" }
+        return { "message" : "invalid key" , "authtoken" : "" }
 
     auth_token = db.create_user(user_id, password)
 
     if not auth_token:
-        return { "message" : "failure" , "authtoken" : "" }
+        return { "message" : "invalid username" , "authtoken" : "" }
 
-    return { "message" : "success" , "authtoken" : auth_token }
+    return { "message" : SUCCESS , "authtoken" : auth_token }
 
 @app.put("/start_workout")
 def start_workout(auth_token: Annotated[str, Body()]):
@@ -68,15 +74,15 @@ def start_workout(auth_token: Annotated[str, Body()]):
     """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
-        return { "message" : "failure" }
+        return { "message" : AUTH_FAIL }
     
     state = db.get_state(user_id)
     if state is not 'inactive':
-        return { "message" : "failure" }
+        return { "message" : BAD_STATE }
     
     db.initiate_workout(user_id)
 
-    return { "message" : "success" }
+    return { "message" : SUCCESS }
 
 def increment_workout(workout: Workout, incre = 1, cycles = 1):
     for _ in range(cycles):
@@ -127,14 +133,14 @@ def set_complete(auth_token: Annotated[str, Body()], diff: Annotated[int, Body()
     """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
-        return { "message" : "failure" }
+        return { "message" : AUTH_FAIL }
     
     state = db.get_state(user_id)
     if state is not 'mid_set':
-        return { "message" : "failure" }
+        return { "message" : BAD_STATE }
     
     if diff > 10:
-        return { "message" : "failure" }
+        return { "message" : "difficulty value outside of range" }
     
     workout = db.get_current_workout(user_id)
 
@@ -170,21 +176,81 @@ def set_complete(auth_token: Annotated[str, Body()], diff: Annotated[int, Body()
     else:
         workout = decrement_workout(workout, cycles=len(workout.sets))
 
-    db.update_workout_by_id(user_id, workout.name, workout)
+    db.update_workout_by_id(user_id, workout.id, workout)
 
     db.complete_set(user_id)
 
-    return { "message" : "success" }
+    return { "message" : SUCCESS }
 
-@app.post("/update_workout")
-def update_workout(auth_token: Annotated[str, Body()], workout: Workout):
+@app.post("/workout/edit")
+def edit_workout(auth_token: Annotated[str, Body()], workout: Workout):
     
     user_id = db.check_auth_token(auth_token)
     if not user_id:
-        return { "message" : "failure" }
+        return { "message" : AUTH_FAIL }
+    
+    if not db.get_workout_by_id(workout.id):
+        return { "message" : NOT_FOUND }
+
+    db.update_workout_by_id(user_id, workout.id, workout)
+
+    return { "message" : SUCCESS }
+
+@app.post("/workout/add")
+def add_workout(auth_token: Annotated[str, Body()], workout: Workout):
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
+    
+    db.add_workout(user_id, workout)
+
+    return { "message" : SUCCESS }
+
+@app.delete("/workout/delete")
+def delete_workout(auth_token: Annotated[str, Body()], workout_id: Annotated[int, Body()]):
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
+    
+    db.delete_workout(user_id, workout_id)
+
+    return { "message" : SUCCESS }
+
+@app.post("/split/edit")
+def edit_split(auth_token: Annotated[str, Body()], split: Workout):
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
     
     # TODO: fill
-    return { "message" : "success" }
+    return { "message" : SUCCESS }
+
+@app.post("/split/add")
+def add_workout(auth_token: Annotated[str, Body()], split: Workout):
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
+    
+    # TODO: fill
+    return { "message" : SUCCESS }
+
+@app.delete("/split/delete")
+def delete_workout(auth_token: Annotated[str, Body()], split: Workout):
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
+    
+    # TODO: fill
+    return { "message" : SUCCESS }
+
+@app.put("/bulk/change")
+def change_bulk(auth_token: Annotated[str, Body()]):
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
+    
+    # TODO: fill
+    return { "message" : SUCCESS }
 
 @app.get("/load")
 def load_state(auth_token: Annotated[str, Body()]):
