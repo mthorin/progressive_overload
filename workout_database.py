@@ -127,8 +127,35 @@ class WorkoutDatabase:
         self.user_data[user_id].next_workout_id += 1
         self.user_data[user_id].workouts[new_workout.id] = new_workout
 
-    def delete_workout(self, user_id: str, workout_id: int):
+    def delete_workout_by_id(self, user_id: str, workout_id: int):
         self.user_data[user_id].workouts.pop(workout_id)
+
+    def add_day_to_plan(self, user_id: str, day: Day):
+        self.user_data[user_id].plan.append(day)
+
+    def delete_day_by_name(self, user_id: str, day_name: str):
+        for i in range(len(self.user_data[user_id].plan)):
+            if self.user_data[user_id].plan[i].name == day_name:
+                del self.user_data[user_id].plan[i]
+                break
+
+    def edit_day_by_name(self, user_id: str, day_name: str, day: Day):
+        for i in range(len(self.user_data[user_id].plan)):
+            if self.user_data[user_id].plan[i].name == day_name:
+                self.user_data[user_id].plan[i] = day
+                break
+
+    def get_day_by_name(self, user_id: str, day_name: str):
+        for i in range(len(self.user_data[user_id].plan)):
+            if self.user_data[user_id].plan[i].name == day_name:
+                return self.user_data[user_id].plan[i]
+        return None
+
+    def change_bulk_status(self, user_id: str):
+        if self.user_data[user_id].bulk == True:
+            self.user_data[user_id].bulk = False
+        else:
+            self.user_data[user_id].bulk = True
 
     def complete_set(self, user_id: str):
         state = self.user_data[user_id].state

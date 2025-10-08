@@ -20,6 +20,10 @@ class Workout(BaseModel):
     max_reps: int
     min_reps: int
 
+class Split(BaseModel):
+    name: str
+    workouts: list[int]
+
 app = FastAPI()
 app.add_middleware(CORSMiddleware, **CORS_CONFIG)
 
@@ -184,7 +188,9 @@ def set_complete(auth_token: Annotated[str, Body()], diff: Annotated[int, Body()
 
 @app.post("/workout/edit")
 def edit_workout(auth_token: Annotated[str, Body()], workout: Workout):
-    
+    """
+    Takes in an authtoken and the workout, updates the workout in the database to the new information.
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
@@ -198,6 +204,9 @@ def edit_workout(auth_token: Annotated[str, Body()], workout: Workout):
 
 @app.post("/workout/add")
 def add_workout(auth_token: Annotated[str, Body()], workout: Workout):
+    """
+    Takes in an authtoken and the workout, adds the workout to the database.
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
@@ -208,54 +217,85 @@ def add_workout(auth_token: Annotated[str, Body()], workout: Workout):
 
 @app.delete("/workout/delete")
 def delete_workout(auth_token: Annotated[str, Body()], workout_id: Annotated[int, Body()]):
+    """
+    Takes in an authtoken and the workout id, deletes the workout in the database (has no effect of the id can't be found).
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
     
-    db.delete_workout(user_id, workout_id)
+    db.delete_workout_by_id(user_id, workout_id)
 
     return { "message" : SUCCESS }
 
 @app.post("/split/edit")
-def edit_split(auth_token: Annotated[str, Body()], split: Workout):
+def edit_split(auth_token: Annotated[str, Body()], split: Split):
+    """
+    Takes in an authtoken and the split, updates the split in the database to the new information.
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
     
-    # TODO: fill
+    if not db.get_day_by_name(user_id, split.name):
+        return { "message" : NOT_FOUND }
+
+    db.edit_day_by_name(user_id, split.name, split)
+
     return { "message" : SUCCESS }
 
 @app.post("/split/add")
-def add_workout(auth_token: Annotated[str, Body()], split: Workout):
+def add_workout(auth_token: Annotated[str, Body()], split: Split):
+    """
+    Takes in an authtoken and the split, adds the split to the database.
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
     
-    # TODO: fill
+    if not db.get_day_by_name(user_id, split.name):
+        return { "message" : NOT_FOUND }
+    
+    db.add_day_to_plan(user_id, split.name)
+
     return { "message" : SUCCESS }
 
 @app.delete("/split/delete")
-def delete_workout(auth_token: Annotated[str, Body()], split: Workout):
+def delete_workout(auth_token: Annotated[str, Body()], split_name: Annotated[int, Body()]):
+    """
+    Takes in an authtoken and the split name, deletes the split in the database (has no effect of the split can't be found).
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
     
-    # TODO: fill
+    db.delete_day_by_name(user_id, split_name)
+    
     return { "message" : SUCCESS }
 
 @app.put("/bulk/change")
 def change_bulk(auth_token: Annotated[str, Body()]):
+    """
+    Takes in an authtoken, updates the bulk status in the database.
+    """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
         return { "message" : AUTH_FAIL }
     
-    # TODO: fill
+    db.change_bulk_status(user_id)
+    
     return { "message" : SUCCESS }
 
 @app.get("/load")
 def load_state(auth_token: Annotated[str, Body()]):
-    # get the current state (return_info)
+    # get current state
+    """
+            -- States --
+        0    - 'inactive' Haven't started a workout 
+        1    - 'active'   Workout started, in between selection
+        2... - 'mid_set'  Current workout id + STATE_OFFSET
+    """
+    # if inactive or active, return state, current day, and list of workouts
  
-    # if appropriate, get the current workout
-    # return
+    # if mid_set, return current workout
     pass
