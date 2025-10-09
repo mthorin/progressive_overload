@@ -34,12 +34,12 @@ class WorkoutDatabase:
         self.user_data = dict()
         self.auth = dict()
 
-    def generate_auth(self, user_id: str):
+    def generate_auth(self, user_id: str) -> str:
         authtoken = secrets.token_urlsafe(16)
         self.auth[authtoken] = (user_id, time.time())
         return authtoken
 
-    def log_in_user(self, user_id: str, password: str):
+    def log_in_user(self, user_id: str, password: str) -> str | None:
         data = self.user_data.get(user_id)
 
         if data == None:
@@ -50,10 +50,10 @@ class WorkoutDatabase:
 
         return self.generate_auth(user_id)
 
-    def log_out_user(self, auth_token: str):
+    def log_out_user(self, auth_token: str) -> None:
         self.auth.pop(auth_token, default = None)
 
-    def create_user(self, user_id: str, password: str):
+    def create_user(self, user_id: str, password: str) -> str | None:
         if self.user_data.get(user_id):
             return None
         
@@ -69,19 +69,19 @@ class WorkoutDatabase:
 
         return self.generate_auth(user_id)
 
-    def check_auth_token(self, auth_token: str):
+    def check_auth_token(self, auth_token: str) -> str | None:
         auth_data = self.auth.get(auth_token, default = None)
 
         if auth_data == None:
-            return False
+            return None
         
         if time.time() - auth_data[1] > 1800:
             self.auth.pop(auth_token)
-            return False
+            return None
         
         self.auth[auth_token] = (auth_data[0], time.time())
 
-        return True
+        return auth_data[0]
     
     """
             -- States --
@@ -90,7 +90,7 @@ class WorkoutDatabase:
         2... - 'mid_set'  Current workout id + STATE_OFFSET
     """
 
-    def get_state(self, user_id: str):
+    def get_state(self, user_id: str) -> str:
         state = self.user_data[user_id].state
         if state > 1:
             return 'mid_set'
@@ -98,17 +98,17 @@ class WorkoutDatabase:
             return 'active'
         return 'inactive'
     
-    def check_bulk_status(self, user_id: str):
+    def check_bulk_status(self, user_id: str) -> bool:
         return self.user_data[user_id].bulk
     
-    def initiate_workout(self, user_id: str):
+    def initiate_workout(self, user_id: str) -> None:
         self.user_data[user_id].state = 1
 
         day = self.user_data[user_id].plan[self.user_data[user_id].curr_day]
 
         self.user_data[user_id].completed = [False] * len(day.workouts)
 
-    def get_current_workout(self, user_id: str):
+    def get_current_workout(self, user_id: str) -> Workout:
         data = self.user_data[user_id]
         state = data.state
         day = data.plan[data.curr_day]
@@ -116,7 +116,7 @@ class WorkoutDatabase:
         workout_id = day.workouts[state - STATE_OFFSET]
         return data.workouts[workout_id]
 
-    def update_workout_by_id(self, user_id: str, workout_id: int, new_workout: Workout):
+    def update_workout_by_id(self, user_id: str, workout_id: int, new_workout: Workout) -> None:
         self.user_data[user_id].workouts[workout_id] = new_workout
 
     def get_workout_by_id(self, user_id: str, workout_id: int):
@@ -161,3 +161,12 @@ class WorkoutDatabase:
         state = self.user_data[user_id].state
         self.user_data[user_id].completed[state - STATE_OFFSET] = True
         self.user_data[user_id].state = 1
+
+    def get_completed_list(self, user_id: str):
+        return self.user_data[user_id].completed
+
+    def get_all_workouts(self, user_id: str):
+        return list(self.user_data[user_id].workouts.values())
+
+    def get_current_day(self, user_id: str):
+        return self.user_data[user_id].plan[self.user_data[user_id].curr_day]

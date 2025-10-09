@@ -24,6 +24,13 @@ class Split(BaseModel):
     name: str
     workouts: list[int]
 
+class LoadResult(BaseModel):
+    state: str
+    workout: Workout | None = None
+    curr_day: int | None = None
+    all_workouts: list[Workout] | None = None
+    completed: list[bool] | None = None
+
 app = FastAPI()
 app.add_middleware(CORSMiddleware, **CORS_CONFIG)
 
@@ -295,7 +302,24 @@ def load_state(auth_token: Annotated[str, Body()]):
         1    - 'active'   Workout started, in between selection
         2... - 'mid_set'  Current workout id + STATE_OFFSET
     """
-    # if inactive or active, return state, current day, and list of workouts
+    user_id = db.check_auth_token(auth_token)
+    if not user_id:
+        return { "message" : AUTH_FAIL }
+    
+    _state = db.get_state(user_id)
+
+    results = LoadResult(state=_state)
+    # if inactive, return state, current day, and list of workouts
+    if _state == 'inactive' or _state == 'active':
+        results.curr_day = db.get_current_day(user_id)
+        results.all_workouts = db.get_all_workouts(user_id)
+
+    # if active, return state, current day, and list of workouts, and completed list
+    if _state == 'active':
+        results.completed = db.get_completed_list(user_id)
  
-    # if mid_set, return current workout
-    pass
+    # if mid_set, return state, return current workout
+    if _state == 'mid_set':
+        results.workout = db.get_current_workout(user_id)
+
+    return results
