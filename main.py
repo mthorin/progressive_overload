@@ -304,7 +304,7 @@ def load_state(auth_token: Annotated[str, Body()]):
     """
     user_id = db.check_auth_token(auth_token)
     if not user_id:
-        return { "message" : AUTH_FAIL }
+        return { "message" : AUTH_FAIL , "data" : None }
     
     _state = db.get_state(user_id)
 
@@ -322,4 +322,4 @@ def load_state(auth_token: Annotated[str, Body()]):
     if _state == 'mid_set':
         results.workout = db.get_current_workout(user_id)
 
-    return results
+    return { "message" : SUCCESS, "data" : results }
